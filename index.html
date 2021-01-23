@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>spine-pixi</title>
+  <style type="text/css">
+    body
+    {
+      	background-color: rgb(127, 127, 127);
+        margin: 0px; 
+        overflow: hidden;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+    }
+    ::-webkit-scrollbar {
+        display: none;
+    }
+  </style>
+  <script type="text/javascript">
+    function findGetParameter(parameterName) {
+    var result = null,
+        tmp = [];
+    location.search
+        .substr(1)
+        .split("&")
+        .forEach(function (item) {
+          tmp = item.split("=");
+          if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
+        });
+    return result;
+}
+  </script>
+
+</head>
+<body>
+</div>
+  <!-- <canvas id="mycanvas"></canvas> -->
+  <div><a href="./?file=raptor">Raptor</a></div>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.6.1/pixi.min.js"></script>
+<script src="SkeletonBinary.js"></script>
+<script src="pixi-spine.js"></script><!-- 1.0.10 -->
+<script type="text/javascript">
+var width = document.documentElement.clientWidth;
+var height = document.documentElement.clientHeight;
+var canvas = document.getElementById('mycanvas');
+var renderer = new PIXI.WebGLRenderer(width,height,/*{view: canvas},*/ {transparent: true}); 
+  //PIXI.autoDetectRenderer(width,height,/*{view: canvas},*/ {transparent: true});
+
+document.body.appendChild(renderer.view);
+var stage = new PIXI.Container();
+
+var file = findGetParameter('file');
+if (!file) file="assets/angel/angel_1112071.skel"; 
+
+if (file.endsWith(".skel")) xhrType = "arraybuffer";
+else xhrType = "json";
+
+PIXI.loader
+    .add('animation', file, { 'xhrType' : xhrType })
+    .load(onAssetsLoaded);
+function onAssetsLoaded(loader,res)
+{
+    spineAnimation = new PIXI.spine.Spine(res.animation.spineData);
+    var scale = 1;
+    spineAnimation.interactive = true;
+    spineAnimation.position.x = width / 2;
+    spineAnimation.position.y = height / 2;
+  	spineAnimation.scale.x = spineAnimation.scale.y = scale;
+    spineAnimation
+        .on('mousedown', onDragStart)
+        .on('mouseup', onDragEnd)
+        .on('mouseupoutside', onDragEnd)
+        .on('mousemove', onDragMove);
+
+    stage.addChild(spineAnimation);
+    spineAnimation.state.setAnimationByName(0, spineAnimation.skeleton.data.animations[0].name, true);
+    for (var i = 1; i < spineAnimation.skeleton.data.animations.length; i++)
+    {
+    	spineAnimation.state.addAnimationByName(0, spineAnimation.skeleton.data.animations[i].name, false, 0);
+    }
+
+    renderer.render(stage);
+    animate();
+}
+function onDragStart(event)
+{
+    this.data = event.data;
+    var mouseposition = this.data.getLocalPosition(this); 
+    this.sx = this.data.getLocalPosition(this).x * this.scale.x;
+    this.sy = this.data.getLocalPosition(this).y * this.scale.y;
+    this.dragging = true;
+}
+
+function onDragEnd()
+{
+    this.dragging = false;
+    this.data = null;
+}
+
+function onDragMove()
+{
+    if (this.dragging)
+    {
+        var newPosition = this.data.getLocalPosition(this.parent);
+        this.position.x = newPosition.x - this.sx;
+        this.position.y = newPosition.y - this.sy;
+    }
+}
+function animate() {
+    
+    requestAnimationFrame(animate);
+    renderer.render(stage);
+}
+</script>
+
+
+</html>
